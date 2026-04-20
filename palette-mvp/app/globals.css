@@ -1,0 +1,344 @@
+@import "tailwindcss";
+
+/* JS config registered for extended utilities (Tailwind v4 @config directive) */
+@config "../tailwind.config.ts";
+
+/* ─── CSS Custom Properties ─────────────────────────────────────────────────
+   These are runtime-accessible via var(--*) in both CSS and inline styles.
+   They intentionally mirror the @theme tokens below so components can use
+   either approach (Tailwind class OR raw CSS variable).
+   ──────────────────────────────────────────────────────────────────────── */
+:root {
+  /* Canvas */
+  --canvas-bg: #1c1c1e;
+
+  /* Glass morphism */
+  --glass-bg:        rgba(255, 255, 255, 0.07);
+  --glass-border:    rgba(255, 255, 255, 0.12);
+  --glass-shadow:    0 8px 32px rgba(0, 0, 0, 0.4),
+                     inset 0 1px 0 rgba(255, 255, 255, 0.08);
+  --glass-hover-bg:  rgba(255, 255, 255, 0.11);
+  --glass-active-bg: rgba(255, 255, 255, 0.15);
+
+  /* Status / logistics */
+  --status-clear:   #34C759;
+  --status-watch:   #FF9500;
+  --status-risk:    #FF3B30;
+  --status-dormant: rgba(255, 255, 255, 0.18);
+
+  /* Semantic text levels */
+  --text-primary:   rgba(255, 255, 255, 0.92);
+  --text-secondary: rgba(255, 255, 255, 0.55);
+  --text-tertiary:  rgba(255, 255, 255, 0.30);
+
+  /* Artifact type accent colours */
+  --type-runway:   #D15521;
+  --type-sketch:   #4A90D9;
+  --type-material: #7CB87C;
+
+  /* Brand palette */
+  --brand-terracotta: #D15521;
+  --brand-amber:      #C9824C;
+  --brand-sand:       #CFAB89;
+  --brand-void:       #1a1a1a;
+
+  /* Typography */
+  --font-display: var(--font-dm-sans, 'DM Sans'), sans-serif;
+  --font-mono:    var(--font-dm-mono, 'DM Mono'), monospace;
+}
+
+/* ─── Tailwind v4 design tokens (@theme) ────────────────────────────────────
+   Tokens declared here become Tailwind utility classes automatically.
+   e.g. --color-canvas → bg-canvas, text-canvas, border-canvas
+        --font-display  → font-display
+        --blur-glass    → backdrop-blur-glass, blur-glass
+   ──────────────────────────────────────────────────────────────────────── */
+@theme {
+  /* Canvas */
+  --color-canvas: #1c1c1e;
+
+  /* Artifact type accents */
+  --color-runway:   #D15521;
+  --color-sketch:   #4A90D9;
+  --color-material: #7CB87C;
+
+  /* Status */
+  --color-status-clear:   #34C759;
+  --color-status-watch:   #FF9500;
+  --color-status-risk:    #FF3B30;
+
+  /* Glass whites (numeric suffix = opacity %) */
+  --color-glass-7:      rgba(255, 255, 255, 0.07);
+  --color-glass-11:     rgba(255, 255, 255, 0.11);
+  --color-glass-15:     rgba(255, 255, 255, 0.15);
+  --color-glass-border: rgba(255, 255, 255, 0.12);
+  --color-glass-edge:   rgba(255, 255, 255, 0.08);
+
+  /* Semantic text */
+  --color-text-primary:   rgba(255, 255, 255, 0.92);
+  --color-text-secondary: rgba(255, 255, 255, 0.55);
+  --color-text-tertiary:  rgba(255, 255, 255, 0.30);
+
+  /* Brand palette */
+  --color-brand-terracotta: #D15521;
+  --color-brand-amber:      #C9824C;
+  --color-brand-sand:       #CFAB89;
+  --color-brand-void:       #1a1a1a;
+
+  /* Typography — resolved from next/font CSS variables set on <html> */
+  --font-display: var(--font-dm-sans, 'DM Sans'), sans-serif;
+  --font-mono:    var(--font-dm-mono, 'DM Mono'), monospace;
+
+  /* Backdrop blur */
+  --blur-glass: 20px;
+
+  /* Border radius */
+  --radius-glass:    12px;
+  --radius-glass-sm: 8px;
+}
+
+/* ─── Base styles ────────────────────────────────────────────────────────────
+   Applied before any component styles.
+   ──────────────────────────────────────────────────────────────────────── */
+@layer base {
+  html,
+  body {
+    background-color: #1c1c1e;
+    color: rgba(255, 255, 255, 0.92);
+    font-family: var(--font-display);
+    overflow: hidden;
+    height: 100vh;
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+  }
+
+  *,
+  *::before,
+  *::after {
+    box-sizing: border-box;
+  }
+
+  /* Minimal dark scrollbar — used in scrollable panels */
+  ::-webkit-scrollbar {
+    width: 3px;
+    height: 3px;
+  }
+  ::-webkit-scrollbar-track {
+    background: transparent;
+  }
+  ::-webkit-scrollbar-thumb {
+    background: rgba(255, 255, 255, 0.14);
+    border-radius: 2px;
+  }
+  ::-webkit-scrollbar-thumb:hover {
+    background: rgba(255, 255, 255, 0.25);
+  }
+}
+
+/* ─── Utility classes ────────────────────────────────────────────────────────
+   Keep these as named utilities rather than arbitrary Tailwind values so the
+   glass spec stays in one place and is easy to update globally.
+   ──────────────────────────────────────────────────────────────────────── */
+@layer utilities {
+
+  /* ── Glass morphism ─────────────────────────────────────────────────────── */
+
+  .glass {
+    background: var(--glass-bg);
+    backdrop-filter: blur(20px) saturate(180%);
+    -webkit-backdrop-filter: blur(20px) saturate(180%);
+    border: 1px solid var(--glass-border);
+    box-shadow: var(--glass-shadow);
+    border-radius: 12px;
+  }
+
+  .glass-hover {
+    background: var(--glass-bg);
+    backdrop-filter: blur(20px) saturate(180%);
+    -webkit-backdrop-filter: blur(20px) saturate(180%);
+    border: 1px solid var(--glass-border);
+    box-shadow: var(--glass-shadow);
+    border-radius: 12px;
+    transition: background 0.15s ease, border-color 0.15s ease, box-shadow 0.15s ease;
+  }
+  .glass-hover:hover {
+    background: var(--glass-hover-bg);
+    border-color: rgba(255, 255, 255, 0.18);
+    box-shadow: 0 12px 40px rgba(0, 0, 0, 0.5),
+                inset 0 1px 0 rgba(255, 255, 255, 0.12);
+  }
+  .glass-hover:active {
+    background: var(--glass-active-bg);
+  }
+
+  /* Flatter glass variant for side rails */
+  .glass-rail {
+    background: rgba(255, 255, 255, 0.04);
+    backdrop-filter: blur(12px) saturate(140%);
+    -webkit-backdrop-filter: blur(12px) saturate(140%);
+    border-right: 1px solid rgba(255, 255, 255, 0.08);
+  }
+
+  .glass-panel {
+    background: rgba(255, 255, 255, 0.05);
+    backdrop-filter: blur(16px) saturate(160%);
+    -webkit-backdrop-filter: blur(16px) saturate(160%);
+    border-left: 1px solid rgba(255, 255, 255, 0.08);
+  }
+
+  /* ── Dot-grid canvas ────────────────────────────────────────────────────── */
+
+  .dot-grid {
+    background-image: radial-gradient(
+      circle,
+      rgba(255, 255, 255, 0.06) 1px,
+      transparent 1px
+    );
+    background-size: 24px 24px;
+  }
+
+  /* ── Status badges ──────────────────────────────────────────────────────── */
+
+  .status-badge {
+    display: inline-flex;
+    align-items: center;
+    gap: 4px;
+    padding: 2px 8px;
+    border-radius: 100px;
+    font-family: var(--font-mono);
+    font-size: 10px;
+    font-weight: 500;
+    letter-spacing: 0.04em;
+    text-transform: uppercase;
+  }
+
+  .status-badge-clear {
+    color: var(--status-clear);
+    background: rgba(52, 199, 89, 0.12);
+    border: 1px solid rgba(52, 199, 89, 0.25);
+  }
+
+  .status-badge-watch {
+    color: var(--status-watch);
+    background: rgba(255, 149, 0, 0.12);
+    border: 1px solid rgba(255, 149, 0, 0.25);
+  }
+
+  .status-badge-risk {
+    color: var(--status-risk);
+    background: rgba(255, 59, 48, 0.12);
+    border: 1px solid rgba(255, 59, 48, 0.25);
+  }
+
+  .status-badge-dormant {
+    color: var(--status-dormant);
+    background: rgba(255, 255, 255, 0.04);
+    border: 1px solid rgba(255, 255, 255, 0.08);
+  }
+
+  /* ── Score bar ──────────────────────────────────────────────────────────────
+     Usage in JSX:
+       <div className="score-bar">
+         <div className="score-bar-fill" style={{ width: `${score}%` }} />
+       </div>
+     The gradient always spans the full track width so the hue shifts
+     meaningfully with score — red at left, amber at mid, green at right.
+     ──────────────────────────────────────────────────────────────────────── */
+
+  .score-bar {
+    position: relative;
+    height: 4px;
+    border-radius: 2px;
+    background: rgba(255, 255, 255, 0.08);
+    overflow: hidden;
+  }
+
+  .score-bar-fill {
+    position: absolute;
+    inset-block: 0;
+    left: 0;
+    border-radius: 2px;
+    /* Gradient spans a fixed wide canvas; fill width clips into the correct hue */
+    background: linear-gradient(
+      90deg,
+      #FF3B30 0%,
+      #FF9500 40%,
+      #34C759 80%
+    );
+    background-size: 200px 100%;
+    transition: width 0.7s cubic-bezier(0.4, 0, 0.2, 1);
+  }
+
+  /* ── Typography helpers ─────────────────────────────────────────────────── */
+
+  .font-display { font-family: var(--font-display); }
+  .font-mono    { font-family: var(--font-mono); }
+
+  .text-primary   { color: var(--text-primary); }
+  .text-secondary { color: var(--text-secondary); }
+  .text-tertiary  { color: var(--text-tertiary); }
+
+  /* ── Artifact type left-border accents ──────────────────────────────────── */
+
+  .border-l-type-runway   { border-left: 3px solid var(--type-runway); }
+  .border-l-type-sketch   { border-left: 3px solid var(--type-sketch); }
+  .border-l-type-material { border-left: 3px solid var(--type-material); }
+
+  /* ── Source badge micro-label ────────────────────────────────────────────── */
+
+  .source-label {
+    font-family: var(--font-mono);
+    font-size: 9px;
+    font-weight: 500;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+    color: var(--text-tertiary);
+  }
+
+  /* ── Skeleton / loading shimmer ─────────────────────────────────────────── */
+
+  .skeleton {
+    background: linear-gradient(
+      90deg,
+      rgba(255, 255, 255, 0.04) 25%,
+      rgba(255, 255, 255, 0.09) 50%,
+      rgba(255, 255, 255, 0.04) 75%
+    );
+    background-size: 200% 100%;
+    animation: skeleton-shimmer 1.6s ease-in-out infinite;
+    border-radius: 4px;
+  }
+
+  /* ── Ghost / locked affordances ─────────────────────────────────────────── */
+
+  .ghost-affordance {
+    opacity: 0.4;
+    cursor: not-allowed;
+    pointer-events: auto; /* allow title/tooltip to show */
+    user-select: none;
+  }
+}
+
+/* ─── Keyframe animations ────────────────────────────────────────────────────
+   Defined outside @layer so they are globally available.
+   ──────────────────────────────────────────────────────────────────────── */
+
+@keyframes skeleton-shimmer {
+  0%   { background-position:  200% 0; }
+  100% { background-position: -200% 0; }
+}
+
+@keyframes fade-in {
+  from { opacity: 0; transform: translateY(4px) scale(0.98); }
+  to   { opacity: 1; transform: translateY(0)   scale(1);    }
+}
+
+@keyframes slide-up {
+  from { opacity: 0; transform: translateY(16px); }
+  to   { opacity: 1; transform: translateY(0);    }
+}
+
+@keyframes count-pulse {
+  0%, 100% { opacity: 1; }
+  50%       { opacity: 0.6; }
+}
