@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useRef, useCallback } from 'react'
+import { useState, useRef, useCallback, useEffect } from 'react'
 import { useCanvasStore } from '@/lib/store'
 
 // ─── Types ────────────────────────────────────────────────────────────────────
@@ -71,15 +71,37 @@ function SparkleIcon({ loading }: { loading: boolean }) {
 // ─── TopBar ───────────────────────────────────────────────────────────────────
 
 export default function TopBar() {
-  const activeTab      = useCanvasStore((s) => s.activeTab)
-  const setActiveTab   = useCanvasStore((s) => s.setActiveTab)
-  const setSearch      = useCanvasStore((s) => s.setSearch)
+  const activeTab        = useCanvasStore((s) => s.activeTab)
+  const setActiveTab     = useCanvasStore((s) => s.setActiveTab)
+  const setSearch        = useCanvasStore((s) => s.setSearch)
+  const searchQuery      = useCanvasStore((s) => s.searchQuery)
   const setSearchResults = useCanvasStore((s) => s.setSearchResults)
   const setSearchLoading = useCanvasStore((s) => s.setSearchLoading)
-  const searchLoading  = useCanvasStore((s) => s.searchLoading)
+  const searchLoading    = useCanvasStore((s) => s.searchLoading)
+  const searchResults    = useCanvasStore((s) => s.searchResults)
 
-  const [inputValue, setInputValue] = useState('')
+  const [badgeLabel, setBadgeLabel] = useState('17 sources')
   const inputRef = useRef<HTMLInputElement>(null)
+
+  // Cmd+K / Ctrl+K → focus search
+  useEffect(() => {
+    const handler = (e: KeyboardEvent) => {
+      if ((e.metaKey || e.ctrlKey) && e.key === 'k') {
+        e.preventDefault()
+        inputRef.current?.focus()
+      }
+    }
+    window.addEventListener('keydown', handler)
+    return () => window.removeEventListener('keydown', handler)
+  }, [])
+
+  // Badge: show "{n} results" for 2s when results arrive, then revert
+  useEffect(() => {
+    if (searchResults.length === 0) return
+    setBadgeLabel(`${searchResults.length} results`)
+    const id = setTimeout(() => setBadgeLabel('17 sources'), 2000)
+    return () => clearTimeout(id)
+  }, [searchResults.length])
 
   // ── Search handler ────────────────────────────────────────────────────────
 
@@ -102,17 +124,14 @@ export default function TopBar() {
         const results = await res.json()
         setSearchResults(Array.isArray(results) ? results : [])
       } catch {
-        // Fallback: clear results gracefully — SearchPanel shows empty state
         setSearchResults([])
-      } finally {
-        setSearchLoading(false)
       }
     },
     [setSearch, setSearchResults, setSearchLoading]
   )
 
   const handleKeyDown = (e: React.KeyboardEvent<HTMLInputElement>) => {
-    if (e.key === 'Enter') handleSearch(inputValue)
+    if (e.key === 'Enter') handleSearch(searchQuery)
   }
 
   // ── Render ────────────────────────────────────────────────────────────────
@@ -193,8 +212,8 @@ export default function TopBar() {
         <input
           ref={inputRef}
           type="text"
-          value={inputValue}
-          onChange={(e) => setInputValue(e.target.value)}
+          value={searchQuery}
+          onChange={(e) => setSearch(e.target.value)}
           onKeyDown={handleKeyDown}
           placeholder="Search your brand universe..."
           style={{
@@ -236,7 +255,7 @@ export default function TopBar() {
               color:        'rgba(255,255,255,0.28)',
             }}
           >
-            17 sources
+            {badgeLabel}
           </span>
         </div>
       </div>

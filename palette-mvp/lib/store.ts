@@ -53,9 +53,38 @@ function computeLogisticsFinal(artifacts: ArtifactNode[]): LogisticsState {
   }
 }
 
-// ─── Initial logistics state (all dormant) ────────────────────────────────
+// ─── Pre-loaded artifacts ─────────────────────────────────────────────────
 
-const INITIAL_LOGISTICS: LogisticsState = computeLogisticsFinal([])
+const PRELOADED_ARTIFACTS: ArtifactNode[] = [
+  {
+    id:                 'pre-1',
+    type:               'sketch',
+    label:              'Biker v3 — London Studio',
+    sublabel:           'Studio London · Draft',
+    source:             'Studio London',
+    thumbnailColor:     '#4A90D9',
+    alignmentHint:      { silhouette: 88, palette: 71, hardware: 92, material: 65 },
+    position:           { x: 120, y: 90 },
+    alignmentScore:     81,
+    alignmentRationale: { silhouette: 88, palette: 71, hardware: 92, material: 65 },
+    droppedAt:          Date.now(),
+    approved:           null,
+  },
+  {
+    id:                 'pre-2',
+    type:               'material',
+    label:              '14oz Selvedge Denim — Candiani',
+    sublabel:           'Material Library · FW26',
+    source:             'Material Library',
+    thumbnailColor:     '#D15521',
+    alignmentHint:      { silhouette: 45, palette: 82, hardware: 55, material: 94 },
+    position:           { x: 340, y: 210 },
+    alignmentScore:     67,
+    alignmentRationale: { silhouette: 45, palette: 82, hardware: 55, material: 94 },
+    droppedAt:          Date.now(),
+    approved:           null,
+  },
+]
 
 // ─── Store interface ───────────────────────────────────────────────────────
 
@@ -136,11 +165,11 @@ export interface CanvasStore {
 
 export const useCanvasStore = create<CanvasStore>()((set, get) => ({
   // ── Initial state ─────────────────────────────────────────────────────────
-  artifacts:          [],
+  artifacts:          PRELOADED_ARTIFACTS,
   collectionTitle:    "Jacket Dystopia — Winter '26",
   selectedId:         null,
   activeTab:          'factory',
-  logistics:          INITIAL_LOGISTICS,
+  logistics:          computeLogisticsFinal(PRELOADED_ARTIFACTS),
   searchQuery:        '',
   searchResults:      [],
   searchLoading:      false,

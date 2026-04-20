@@ -5,6 +5,18 @@ import { useDraggable } from '@dnd-kit/core'
 import { CSS } from '@dnd-kit/utilities'
 import type { IntakeCard as IntakeCardType, ArtifactType, AlignmentBreakdown } from '@/lib/types'
 
+// ─── Keyword helper ───────────────────────────────────────────────────────────
+
+function getKeyword(type: ArtifactType, label: string): string {
+  if (type === 'runway') return 'fashion,runway,editorial'
+  if (type === 'sketch') return 'fashion,sketch,illustration'
+  const l = label.toLowerCase()
+  if (l.includes('denim')) return 'denim,fabric,textile'
+  if (l.includes('wool') || l.includes('bouclé') || l.includes('boucle')) return 'wool,textile,fabric'
+  if (l.includes('leather')) return 'leather,texture,material'
+  return 'fabric,textile,material'
+}
+
 // ─── Type icons ───────────────────────────────────────────────────────────────
 
 function RunwayIcon() {
@@ -183,8 +195,11 @@ function CardInner({
   listeners  = {},
   attributes = {},
 }: CardInnerProps) {
-  const TypeIcon = TYPE_ICONS[card.type]
+  const [imgError, setImgError] = useState(false)
+  const TypeIcon  = TYPE_ICONS[card.type]
   const typeColor = TYPE_COLOR[card.type]
+  const keyword   = getKeyword(card.type, card.label)
+  const isRunway  = card.type === 'runway'
 
   return (
     <div
@@ -216,6 +231,22 @@ function CardInner({
         WebkitUserSelect: 'none',
       }}
     >
+      {/* ── Runway: full-width image header ─────────────────────────────── */}
+      {isRunway && (
+        <div style={{ position: 'relative', width: '100%', height: 120, overflow: 'hidden' }}>
+          <div style={{ position: 'absolute', inset: 0, background: `${card.thumbnailColor}40` }} />
+          {!imgError && (
+            <img
+              src={`https://source.unsplash.com/featured/400x120/?${keyword}&sig=${card.id}`}
+              loading="lazy"
+              alt=""
+              onError={() => setImgError(true)}
+              style={{ width: '100%', height: '100%', objectFit: 'cover', display: 'block' }}
+            />
+          )}
+        </div>
+      )}
+
       {/* ── Main row: thumbnail + text ──────────────────────────────────── */}
       <div
         style={{
@@ -225,22 +256,38 @@ function CardInner({
           padding: '8px 10px 6px 10px',
         }}
       >
-        {/* Thumbnail */}
-        <div
-          style={{
-            width:        44,
-            height:       44,
-            borderRadius: 6,
-            flexShrink:   0,
-            background:   `${card.thumbnailColor}40`,  // 25% opacity tint
-            border:       `1px solid ${card.thumbnailColor}99`,  // 60% opacity border
-            display:      'flex',
-            alignItems:   'center',
-            justifyContent: 'center',
-          }}
-        >
-          <TypeIcon />
-        </div>
+        {/* Thumbnail — 48×48 image (non-runway only) */}
+        {!isRunway && (
+          <div
+            style={{
+              position:     'relative',
+              width:        48,
+              height:       48,
+              borderRadius: 6,
+              flexShrink:   0,
+              background:   `${card.thumbnailColor}40`,
+              border:       `1px solid ${card.thumbnailColor}99`,
+              overflow:     'hidden',
+            }}
+          >
+            {!imgError ? (
+              <img
+                src={`https://source.unsplash.com/featured/48x48/?${keyword}&sig=${card.id}`}
+                loading="lazy"
+                alt=""
+                onError={() => setImgError(true)}
+                style={{ width: '100%', height: '100%', objectFit: 'cover', display: 'block' }}
+              />
+            ) : (
+              <div style={{
+                width: '100%', height: '100%',
+                display: 'flex', alignItems: 'center', justifyContent: 'center',
+              }}>
+                <TypeIcon />
+              </div>
+            )}
+          </div>
+        )}
 
         {/* Text content */}
         <div style={{ minWidth: 0, flex: 1 }}>
