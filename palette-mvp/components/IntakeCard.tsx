@@ -1,21 +1,9 @@
 'use client'
 
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import { useDraggable } from '@dnd-kit/core'
 import { CSS } from '@dnd-kit/utilities'
 import type { IntakeCard as IntakeCardType, ArtifactType, AlignmentBreakdown } from '@/lib/types'
-
-// ─── Keyword helper ───────────────────────────────────────────────────────────
-
-function getKeyword(type: ArtifactType, label: string): string {
-  if (type === 'runway') return 'fashion,runway,editorial'
-  if (type === 'sketch') return 'fashion,sketch,illustration'
-  const l = label.toLowerCase()
-  if (l.includes('denim')) return 'denim,fabric,textile'
-  if (l.includes('wool') || l.includes('bouclé') || l.includes('boucle')) return 'wool,textile,fabric'
-  if (l.includes('leather')) return 'leather,texture,material'
-  return 'fabric,textile,material'
-}
 
 // ─── Type icons ───────────────────────────────────────────────────────────────
 
@@ -69,6 +57,44 @@ function MaterialIcon() {
     </svg>
   )
 }
+
+// ─── Keyword-aware image helpers ──────────────────────────────────────────────
+
+function hashId(id: string): number {
+  let h = 0
+  for (const c of id) h = (h * 31 + c.charCodeAt(0)) & 0xffff
+  return h
+}
+
+function getImageKeywords(type: ArtifactType, label: string): string {
+  const l = label.toLowerCase()
+  if (type === 'runway') {
+    if (l.includes('biker'))                              return 'fashion,runway,biker,jacket'
+    if (l.includes('trench'))                             return 'fashion,runway,trench,coat'
+    if (l.includes('shell') || l.includes('outerwear'))   return 'fashion,runway,outerwear'
+    if (l.includes('knit'))                               return 'fashion,runway,knitwear'
+    if (l.includes('leather'))                            return 'fashion,runway,leather,jacket'
+    return 'fashion,runway,editorial'
+  }
+  if (type === 'sketch') {
+    if (l.includes('biker'))                              return 'biker,jacket,fashion'
+    if (l.includes('trench'))                             return 'trench,coat,fashion'
+    if (l.includes('shell'))                              return 'jacket,outerwear,fashion'
+    if (l.includes('knit') || l.includes('rib') || l.includes('cable')) return 'knitwear,fashion'
+    if (l.includes('leather'))                            return 'leather,jacket,fashion'
+    return 'fashion,clothing,design'
+  }
+  // material
+  if (l.includes('denim') || l.includes('selvedge'))      return 'denim,fabric,textile'
+  if (l.includes('leather') || l.includes('nappa') || l.includes('lamb')) return 'leather,texture,material'
+  if (l.includes('wool') || l.includes('merino') || l.includes('boucl'))  return 'wool,fabric,textile'
+  if (l.includes('cashmere'))                             return 'cashmere,fabric,textile'
+  if (l.includes('neoprene'))                             return 'fabric,textile,neoprene'
+  if (l.includes('knit') || l.includes('panel'))          return 'knit,fabric,textile'
+  return 'fabric,textile,material'
+}
+
+const imgCache = new Map<string, string>()
 
 const TYPE_ICONS: Record<ArtifactType, React.FC> = {
   runway:   RunwayIcon,
@@ -196,10 +222,38 @@ function CardInner({
   attributes = {},
 }: CardInnerProps) {
   const [imgError, setImgError] = useState(false)
+  const [imgUrl,   setImgUrl]   = useState<string | null>(null)
   const TypeIcon  = TYPE_ICONS[card.type]
   const typeColor = TYPE_COLOR[card.type]
-  const keyword   = getKeyword(card.type, card.label)
   const isRunway  = card.type === 'runway'
+  const keywords  = getImageKeywords(card.type, card.label)
+  const lock      = hashId(card.id)
+
+  useEffect(() => {
+    const cached = imgCache.get(card.id)
+    if (cached) { setImgUrl(cached); return }
+
+    const w = isRunway ? 400 : 48
+    const h = isRunway ? 120 : 48
+    let cancelled = false
+    const timer = setTimeout(async () => {
+      try {
+        const res = await fetch('/api/image', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ type: card.type, label: card.label, id: card.id, width: w, height: h }),
+        })
+        if (!res.ok) throw new Error()
+        const { url } = await res.json()
+        if (url && !cancelled) {
+          imgCache.set(card.id, url)
+          setImgError(false)
+          setImgUrl(url)
+        }
+      } catch { /* keep loremflickr placeholder */ }
+    }, 100)
+    return () => { cancelled = true; clearTimeout(timer) }
+  }, []) // eslint-disable-line react-hooks/exhaustive-deps
 
   return (
     <div
@@ -237,7 +291,7 @@ function CardInner({
           <div style={{ position: 'absolute', inset: 0, background: `${card.thumbnailColor}40` }} />
           {!imgError && (
             <img
-              src={`https://source.unsplash.com/featured/400x120/?${keyword}&sig=${card.id}`}
+              src={imgUrl ?? `https://loremflickr.com/400/120/${keywords}?lock=${lock + 1}`}
               loading="lazy"
               alt=""
               onError={() => setImgError(true)}
@@ -272,7 +326,7 @@ function CardInner({
           >
             {!imgError ? (
               <img
-                src={`https://source.unsplash.com/featured/48x48/?${keyword}&sig=${card.id}`}
+                src={imgUrl ?? `https://loremflickr.com/48/48/${keywords}?lock=${lock}`}
                 loading="lazy"
                 alt=""
                 onError={() => setImgError(true)}

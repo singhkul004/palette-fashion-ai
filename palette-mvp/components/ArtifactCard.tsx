@@ -6,17 +6,7 @@ import { motion, AnimatePresence } from 'framer-motion'
 import { useCanvasStore } from '@/lib/store'
 import type { ArtifactNode, ArtifactType } from '@/lib/types'
 
-// ─── Keyword helper ───────────────────────────────────────────────────────────
-
-function getKeyword(type: ArtifactType, label: string): string {
-  if (type === 'runway') return 'fashion,runway,editorial'
-  if (type === 'sketch') return 'fashion,sketch,illustration'
-  const l = label.toLowerCase()
-  if (l.includes('denim')) return 'denim,fabric,textile'
-  if (l.includes('wool') || l.includes('bouclé') || l.includes('boucle')) return 'wool,textile,fabric'
-  if (l.includes('leather')) return 'leather,texture,material'
-  return 'fabric,textile,material'
-}
+const imgCache = new Map<string, string>()
 
 // ─── Type color ───────────────────────────────────────────────────────────────
 
@@ -24,6 +14,42 @@ const TYPE_COLOR: Record<ArtifactType, string> = {
   runway:   'var(--type-runway)',
   sketch:   'var(--type-sketch)',
   material: 'var(--type-material)',
+}
+
+// ─── Keyword-aware image helpers ──────────────────────────────────────────────
+
+function hashId(id: string): number {
+  let h = 0
+  for (const c of id) h = (h * 31 + c.charCodeAt(0)) & 0xffff
+  return h
+}
+
+function getImageKeywords(type: ArtifactType, label: string): string {
+  const l = label.toLowerCase()
+  if (type === 'runway') {
+    if (l.includes('biker'))                              return 'fashion,runway,biker,jacket'
+    if (l.includes('trench'))                             return 'fashion,runway,trench,coat'
+    if (l.includes('shell') || l.includes('outerwear'))   return 'fashion,runway,outerwear'
+    if (l.includes('knit'))                               return 'fashion,runway,knitwear'
+    if (l.includes('leather'))                            return 'fashion,runway,leather,jacket'
+    return 'fashion,runway,editorial'
+  }
+  if (type === 'sketch') {
+    if (l.includes('biker'))                              return 'biker,jacket,fashion'
+    if (l.includes('trench'))                             return 'trench,coat,fashion'
+    if (l.includes('shell'))                              return 'jacket,outerwear,fashion'
+    if (l.includes('knit') || l.includes('rib') || l.includes('cable')) return 'knitwear,fashion'
+    if (l.includes('leather'))                            return 'leather,jacket,fashion'
+    return 'fashion,clothing,design'
+  }
+  // material
+  if (l.includes('denim') || l.includes('selvedge'))      return 'denim,fabric,textile'
+  if (l.includes('leather') || l.includes('nappa') || l.includes('lamb')) return 'leather,texture,material'
+  if (l.includes('wool') || l.includes('merino') || l.includes('boucl'))  return 'wool,fabric,textile'
+  if (l.includes('cashmere'))                             return 'cashmere,fabric,textile'
+  if (l.includes('neoprene'))                             return 'fabric,textile,neoprene'
+  if (l.includes('knit') || l.includes('panel'))          return 'knit,fabric,textile'
+  return 'fabric,textile,material'
 }
 
 // ─── Score bar ────────────────────────────────────────────────────────────────
@@ -69,6 +95,7 @@ function ScoreRow({ label, score }: { label: string; score: number }) {
 export default function ArtifactCard({ artifact }: { artifact: ArtifactNode }) {
   const [hovered,  setHovered]  = useState(false)
   const [imgError, setImgError] = useState(false)
+  const [imgUrl,   setImgUrl]   = useState<string | null>(null)
 
   const setArtifactScore = useCanvasStore((s) => s.setArtifactScore)
   const removeArtifact   = useCanvasStore((s) => s.removeArtifact)
@@ -116,11 +143,35 @@ export default function ArtifactCard({ artifact }: { artifact: ArtifactNode }) {
     return () => { cancelled = true; clearTimeout(timer) }
   }, []) // eslint-disable-line react-hooks/exhaustive-deps
 
+  useEffect(() => {
+    const cached = imgCache.get(artifact.id)
+    if (cached) { setImgUrl(cached); return }
+
+    let cancelled = false
+    const timer = setTimeout(async () => {
+      try {
+        const res = await fetch('/api/image', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ type: artifact.type, label: artifact.label, id: artifact.id, width: 480, height: 320 }),
+        })
+        if (!res.ok) throw new Error()
+        const { url } = await res.json()
+        if (url && !cancelled) {
+          imgCache.set(artifact.id, url)
+          setImgError(false)
+          setImgUrl(url)
+        }
+      } catch { /* keep loremflickr placeholder */ }
+    }, 100)
+    return () => { cancelled = true; clearTimeout(timer) }
+  }, []) // eslint-disable-line react-hooks/exhaustive-deps
+
   const typeColor  = TYPE_COLOR[artifact.type]
   const rationale  = artifact.alignmentRationale
   const isApproved = artifact.approved === true
-  const keyword    = getKeyword(artifact.type, artifact.label)
-  const imgSrc     = `https://source.unsplash.com/featured/480x320/?${keyword}&sig=${artifact.id}`
+  const keywords = getImageKeywords(artifact.type, artifact.label)
+  const imgSrc   = imgUrl ?? `https://loremflickr.com/480/320/${keywords}?lock=${hashId(artifact.id)}`
 
   return (
     <motion.div
