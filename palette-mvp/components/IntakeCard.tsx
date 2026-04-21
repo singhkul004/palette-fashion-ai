@@ -262,6 +262,7 @@ function CardInner({
       {...(listeners as any)}
       // eslint-disable-next-line @typescript-eslint/no-explicit-any
       {...(attributes as any)}
+      suppressHydrationWarning
       className="group"
       style={{
         ...dragStyle,

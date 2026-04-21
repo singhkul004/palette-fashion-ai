@@ -180,6 +180,7 @@ export default function ArtifactCard({ artifact }: { artifact: ArtifactNode }) {
       {...(listeners as any)}
       // eslint-disable-next-line @typescript-eslint/no-explicit-any
       {...(attributes as any)}
+      suppressHydrationWarning
       initial={{ opacity: 0, scale: 0.85 }}
       animate={{ opacity: 1, scale: 1 }}
       exit={{ opacity: 0, scale: 0.8, y: 20 }}
