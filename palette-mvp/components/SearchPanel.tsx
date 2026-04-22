@@ -307,9 +307,9 @@ function ResultsState({
   return (
     <div
       style={{
-        flex:     1,
-        overflow: 'hidden',  // clips to max 3 per section — no scroll
-        padding:  '10px 12px 0',
+        flex:       1,
+        overflowY:  'auto',
+        padding:    '10px 12px 0',
       }}
     >
       {/* Query attribution */}
